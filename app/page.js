@@ -46,8 +46,8 @@ export default async function DashboardPage({ searchParams }) {
 
       <div className="stat-grid">
         <StatCard label="Porositë e Pranuara Sot" value={ordersToday.length} />
-        <StatCard label="Qilimat e Marrë Sot" value={collectedToday.length} />
-        <StatCard label="Aktualisht në Fabrikë" value={atFactory.length} accent="amber" />
+        <StatCard label="Tepiha Sot" value={collectedToday.length} />
+        <StatCard label="Aktualisht në lokal" value={atFactory.length} accent="amber" />
         <StatCard label="Gati për Dërgesë" value={readyForDelivery.length} accent="green" />
         <StatCard label="Dërguar Sot" value={deliveredToday.length} />
         <StatCard label="Në Pritje për Dërgesë" value={waitingDelivery.length} />
