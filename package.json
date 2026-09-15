@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed": "node scripts/seed.mjs"
+    "seed": "node scripts/seed.mjs",
+    "clean-demo": "node scripts/remove-demo-data.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

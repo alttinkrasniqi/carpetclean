@@ -161,7 +161,7 @@ a { color: inherit; text-decoration: none; }
 .custom-range-row input { padding: 7px 10px; border: 1px solid var(--gray-200); border-radius: 7px; font-size: 13px; }
 
 /* ---------------- Tables ---------------- */
-.table-wrap { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.table-wrap { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius); overflow-x: auto; overflow-y: hidden; box-shadow: var(--shadow); }
 table { width: 100%; border-collapse: collapse; }
 thead th {
   text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em;
@@ -291,12 +291,43 @@ textarea { resize: vertical; min-height: 70px; }
   .detail-grid { grid-template-columns: 1fr; }
   .chart-grid { grid-template-columns: 1fr; }
 }
+.mobile-menu-btn { display: none; }
+.sidebar-overlay { display: none; }
+
 @media (max-width: 760px) {
-  .sidebar { position: fixed; left: -240px; transition: left .2s; z-index: 100; }
+  .mobile-menu-btn {
+    display: flex; align-items: center; justify-content: center;
+    position: fixed; top: 12px; left: 12px; z-index: 110;
+    width: 40px; height: 40px; border-radius: 8px;
+    background: #fff; border: 1px solid var(--gray-200); box-shadow: var(--shadow);
+    font-size: 18px; cursor: pointer; color: var(--gray-700);
+  }
+  .sidebar {
+    position: fixed; top: 0; left: -260px; width: 230px; height: 100vh;
+    z-index: 105; transition: left .22s ease; box-shadow: none;
+  }
+  .sidebar.open { left: 0; box-shadow: 0 0 40px rgba(0,0,0,.25); }
+  .sidebar-overlay.visible {
+    display: block; position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 100;
+  }
+  .topbar { padding-left: 60px; }
   .stat-grid { grid-template-columns: 1fr 1fr; }
   .work-grid { grid-template-columns: 1fr; }
-  .content { padding: 16px; }
+  .content { padding: 14px; }
   .search-wrap { width: 100%; }
+  .table-wrap table { min-width: 640px; }
+  .carpet-table { min-width: 560px; }
+  .page-header { flex-direction: column; align-items: stretch; }
+  .page-header .btn { width: 100%; }
+  .kpi-row { gap: 8px; }
+  .kpi-box { min-width: 100px; padding: 10px 12px; }
+  .kpi-box .kpi-value { font-size: 17px; }
+  .stat-value { font-size: 22px; }
+  .form-actions { flex-direction: column-reverse; }
+  .form-actions .btn { width: 100%; }
+}
+@media (max-width: 420px) {
+  .stat-grid { grid-template-columns: 1fr; }
 }
 
 /* extra bits for Next.js version */

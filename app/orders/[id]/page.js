@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getOrderById } from "@/lib/queries";
 import { STATUS_STEPS, STATUS_LABELS_SQ, PAYMENT_STATUS_LABELS_SQ, fmtEUR, fmtDate } from "@/lib/data";
-import { updateOrderStatus, updateOrderDetails, addPayment, archiveOrder } from "@/app/actions";
+import { updateOrderStatus, updateOrderDetails, addPayment, archiveOrder, deleteOrder } from "@/app/actions";
+import ConfirmForm from "@/components/ConfirmForm";
 
 export default async function OrderDetailPage({ params }) {
   const order = await getOrderById(params.id);
@@ -12,6 +13,7 @@ export default async function OrderDetailPage({ params }) {
   const boundUpdateDetails = updateOrderDetails.bind(null, order.id);
   const boundAddPayment = addPayment.bind(null, order.id);
   const boundArchive = archiveOrder.bind(null, order.id);
+  const boundDelete = deleteOrder.bind(null, order.id);
 
   return (
     <>
@@ -29,11 +31,19 @@ export default async function OrderDetailPage({ params }) {
           <Link href="/orders" className="btn btn-secondary">
             Kthehu te Porositë
           </Link>
-          <form action={boundArchive}>
-            <button type="submit" className="btn btn-danger">
+          <ConfirmForm action={boundArchive} confirmText="Me arkivu këtë porosi? Do fshihet nga listat aktive, por mbetet për raportet historike.">
+            <button type="submit" className="btn btn-secondary">
               Arkivo
             </button>
-          </form>
+          </ConfirmForm>
+          <ConfirmForm
+            action={boundDelete}
+            confirmText={`Me fshi PËRGJITHMONË porosinë ${order.order_number}? Kjo e heq krejt (edhe nga raportet dhe shitjet) — nuk ka kthim mbrapa.`}
+          >
+            <button type="submit" className="btn btn-danger">
+              Fshi Përgjithmonë
+            </button>
+          </ConfirmForm>
         </div>
       </div>
 

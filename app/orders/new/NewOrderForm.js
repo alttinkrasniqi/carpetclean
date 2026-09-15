@@ -110,64 +110,66 @@ export default function NewOrderForm({ customers, defaultPrice, today }) {
           <div className="form-section-title">
             <span className="step-num">2</span> Matjet e Qilimit
           </div>
-          <table className="carpet-table">
-            <thead>
-              <tr>
-                <th style={{ width: "26%" }}>Qilimi</th>
-                <th style={{ width: "18%" }}>Gjatësia (m)</th>
-                <th style={{ width: "18%" }}>Gjerësia (m)</th>
-                <th style={{ width: "16%" }}>Sipërfaqja (m²)</th>
-                <th style={{ width: "16%" }}>Çmimi (€)</th>
-                <th style={{ width: "6%" }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => {
-                const area = (parseFloat(r.length) || 0) * (parseFloat(r.width) || 0);
-                const rowPrice = area * (parseFloat(price) || 0);
-                return (
-                  <tr key={r.id}>
-                    <td>
-                      <input
-                        type="text"
-                        name="carpet_label[]"
-                        defaultValue={r.label}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        name="carpet_length[]"
-                        value={r.length}
-                        placeholder="3.00"
-                        onChange={(e) => updateRow(r.id, "length", e.target.value)}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        name="carpet_width[]"
-                        value={r.width}
-                        placeholder="2.00"
-                        onChange={(e) => updateRow(r.id, "width", e.target.value)}
-                      />
-                    </td>
-                    <td className="carpet-row-area">{area.toFixed(2)} m²</td>
-                    <td>€{rowPrice.toFixed(2)}</td>
-                    <td>
-                      <span className="carpet-row-remove" onClick={() => removeRow(r.id)} title="Hiq">
-                        &times;
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div style={{ overflowX: "auto" }}>
+            <table className="carpet-table">
+              <thead>
+                <tr>
+                  <th style={{ width: "26%" }}>Qilimi</th>
+                  <th style={{ width: "18%" }}>Gjatësia (m)</th>
+                  <th style={{ width: "18%" }}>Gjerësia (m)</th>
+                  <th style={{ width: "16%" }}>Sipërfaqja (m²)</th>
+                  <th style={{ width: "16%" }}>Çmimi (€)</th>
+                  <th style={{ width: "6%" }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => {
+                  const area = (parseFloat(r.length) || 0) * (parseFloat(r.width) || 0);
+                  const rowPrice = area * (parseFloat(price) || 0);
+                  return (
+                    <tr key={r.id}>
+                      <td>
+                        <input
+                          type="text"
+                          name="carpet_label[]"
+                          defaultValue={r.label}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          name="carpet_length[]"
+                          value={r.length}
+                          placeholder="3.00"
+                          onChange={(e) => updateRow(r.id, "length", e.target.value)}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          name="carpet_width[]"
+                          value={r.width}
+                          placeholder="2.00"
+                          onChange={(e) => updateRow(r.id, "width", e.target.value)}
+                        />
+                      </td>
+                      <td className="carpet-row-area">{area.toFixed(2)} m²</td>
+                      <td>€{rowPrice.toFixed(2)}</td>
+                      <td>
+                        <span className="carpet-row-remove" onClick={() => removeRow(r.id)} title="Hiq">
+                          &times;
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
           <button type="button" className="btn btn-secondary btn-sm" onClick={addRow}>
             + Shto Qilim
           </button>

@@ -153,6 +153,29 @@ export async function restoreOrder(orderId) {
   revalidatePath("/orders");
 }
 
+export async function deleteOrder(orderId) {
+  // carpets & payments cascade-delete automatically (see supabase-schema.sql)
+  await supabase.from("orders").delete().eq("id", orderId);
+  revalidatePath("/");
+  revalidatePath("/orders");
+  revalidatePath("/customers");
+  revalidatePath("/reports");
+  revalidatePath("/settings");
+  redirect("/orders");
+}
+
+export async function deleteCustomer(customerId) {
+  // delete the customer's orders first (this cascades to carpets & payments
+  // automatically since those tables reference orders with ON DELETE CASCADE)
+  await supabase.from("orders").delete().eq("customer_id", customerId);
+  await supabase.from("customers").delete().eq("id", customerId);
+
+  revalidatePath("/customers");
+  revalidatePath("/orders");
+  revalidatePath("/");
+  redirect("/customers");
+}
+
 export async function updateSettings(formData) {
   const businessName = (formData.get("business_name") || "").toString().trim();
   const defaultPrice = parseFloat(formData.get("default_price_per_sqm"));

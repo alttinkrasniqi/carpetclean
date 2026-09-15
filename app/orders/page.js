@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getAllActiveOrders } from "@/lib/queries";
 import { fmtEUR, fmtDate, STATUS_LABELS_SQ, PAYMENT_STATUS_LABELS_SQ } from "@/lib/data";
+import { deleteOrder } from "@/app/actions";
+import ConfirmForm from "@/components/ConfirmForm";
 
 const FILTERS = [
   { key: "all", label: "Të Gjitha" },
@@ -75,10 +77,13 @@ export default async function OrdersPage({ searchParams }) {
                 <th>Pagesa</th>
                 <th>Statusi</th>
                 <th>Krijuar</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              {orders.map((o) => (
+              {orders.map((o) => {
+                const boundDelete = deleteOrder.bind(null, o.id);
+                return (
                 <tr key={o.id}>
                   <td className="cell-strong">
                     <Link href={`/orders/${o.id}`} className="link-plain">
@@ -100,8 +105,19 @@ export default async function OrdersPage({ searchParams }) {
                     <span className={`badge ${o.status_badge_class}`}>{STATUS_LABELS_SQ[o.status] || o.status}</span>
                   </td>
                   <td className="cell-muted">{fmtDate(o.created_at)}</td>
+                  <td>
+                    <ConfirmForm
+                      action={boundDelete}
+                      confirmText={`Me fshi PËRGJITHMONË porosinë ${o.order_number}? Nuk ka kthim mbrapa.`}
+                    >
+                      <button type="submit" className="btn btn-danger btn-sm">
+                        Fshi
+                      </button>
+                    </ConfirmForm>
+                  </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         ) : (

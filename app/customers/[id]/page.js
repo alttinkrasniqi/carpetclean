@@ -2,10 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCustomerById } from "@/lib/queries";
 import { fmtEUR, fmtDate, STATUS_LABELS_SQ, PAYMENT_STATUS_LABELS_SQ } from "@/lib/data";
+import { deleteCustomer } from "@/app/actions";
+import ConfirmForm from "@/components/ConfirmForm";
 
 export default async function CustomerDetailPage({ params }) {
   const customer = await getCustomerById(params.id);
   if (!customer) return notFound();
+
+  const boundDelete = deleteCustomer.bind(null, customer.id);
 
   return (
     <>
@@ -22,9 +26,19 @@ export default async function CustomerDetailPage({ params }) {
             </p>
           </div>
         </div>
-        <Link href="/orders/new" className="btn btn-primary">
-          + Porosi e Re
-        </Link>
+        <div className="tag-row">
+          <Link href="/orders/new" className="btn btn-primary">
+            + Porosi e Re
+          </Link>
+          <ConfirmForm
+            action={boundDelete}
+            confirmText={`Me fshi "${customer.name}" dhe krejt porositë e tij/saj (${customer.order_count})? Kjo s'kthehet mbrapa.`}
+          >
+            <button type="submit" className="btn btn-danger">
+              Fshi Klientin
+            </button>
+          </ConfirmForm>
+        </div>
       </div>
 
       <div className="kpi-row">
