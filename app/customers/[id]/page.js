@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCustomerById } from "@/lib/queries";
 import { fmtEUR, fmtDate, STATUS_LABELS_SQ, PAYMENT_STATUS_LABELS_SQ } from "@/lib/data";
-import { deleteCustomer } from "@/app/actions";
+import { deleteCustomer, updateCustomer } from "@/app/actions";
 import ConfirmForm from "@/components/ConfirmForm";
 
 export default async function CustomerDetailPage({ params }) {
@@ -10,6 +10,7 @@ export default async function CustomerDetailPage({ params }) {
   if (!customer) return notFound();
 
   const boundDelete = deleteCustomer.bind(null, customer.id);
+  const boundUpdate = updateCustomer.bind(null, customer.id);
 
   return (
     <>
@@ -40,6 +41,31 @@ export default async function CustomerDetailPage({ params }) {
           </ConfirmForm>
         </div>
       </div>
+
+      <details style={{ marginBottom: 24 }}>
+        <summary className="btn btn-secondary btn-sm" style={{ display: "inline-block", cursor: "pointer" }}>
+          Ndrysho Klientin
+        </summary>
+        <div className="card card-pad" style={{ maxWidth: 480, marginTop: 12 }}>
+          <form action={boundUpdate}>
+            <div className="form-group">
+              <label>Emri</label>
+              <input type="text" name="name" defaultValue={customer.name} required />
+            </div>
+            <div className="form-group">
+              <label>Telefoni</label>
+              <input type="tel" name="phone" defaultValue={customer.phone} required />
+            </div>
+            <div className="form-group">
+              <label>Adresa</label>
+              <input type="text" name="address" defaultValue={customer.address || ""} />
+            </div>
+            <button type="submit" className="btn btn-primary">
+              Ruaj Ndryshimet
+            </button>
+          </form>
+        </div>
+      </details>
 
       <div className="kpi-row">
         <div className="kpi-box">

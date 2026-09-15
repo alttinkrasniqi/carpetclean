@@ -1,16 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getOrderById } from "@/lib/queries";
+import { getOrderById, getOrderHistory } from "@/lib/queries";
 import { STATUS_STEPS, STATUS_LABELS_SQ, PAYMENT_STATUS_LABELS_SQ, fmtEUR, fmtDate } from "@/lib/data";
-import { updateOrderStatus, updateOrderDetails, addPayment, archiveOrder, deleteOrder } from "@/app/actions";
+import { updateOrderStatus, updateOrderDetails, updateOrderCarpets, addPayment, archiveOrder, deleteOrder } from "@/app/actions";
 import ConfirmForm from "@/components/ConfirmForm";
+import EditOrderCarpets from "./EditOrderCarpets";
 
 export default async function OrderDetailPage({ params }) {
   const order = await getOrderById(params.id);
   if (!order) return notFound();
+  const history = await getOrderHistory(order.id);
 
   const currentIndex = STATUS_STEPS.indexOf(order.status);
   const boundUpdateDetails = updateOrderDetails.bind(null, order.id);
+  const boundUpdateCarpets = updateOrderCarpets.bind(null, order.id);
   const boundAddPayment = addPayment.bind(null, order.id);
   const boundArchive = archiveOrder.bind(null, order.id);
   const boundDelete = deleteOrder.bind(null, order.id);
@@ -97,7 +100,7 @@ export default async function OrderDetailPage({ params }) {
 
       <div className="detail-grid">
         <div>
-          <div className="table-wrap" style={{ marginBottom: 20 }}>
+          <div className="table-wrap" style={{ marginBottom: 12 }}>
             <table>
               <thead>
                 <tr>
@@ -121,6 +124,15 @@ export default async function OrderDetailPage({ params }) {
               </tbody>
             </table>
           </div>
+
+          <details style={{ marginBottom: 20 }}>
+            <summary className="btn btn-secondary btn-sm" style={{ display: "inline-block", cursor: "pointer" }}>
+              Ndrysho Porosinë (Qilimat / Çmimin)
+            </summary>
+            <div style={{ marginTop: 12 }}>
+              <EditOrderCarpets action={boundUpdateCarpets} carpets={order.carpets} priceperSqm={order.price_per_sqm} />
+            </div>
+          </details>
 
           <div className="card card-pad" style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>Marrja &amp; Dërgesa</div>
@@ -253,6 +265,31 @@ export default async function OrderDetailPage({ params }) {
             )}
           </div>
         </div>
+      </div>
+
+      <div className="section-title" style={{ marginTop: 30 }}>
+        Historiku i Porosisë
+      </div>
+      <div className="card card-pad">
+        {history.length === 0 ? (
+          <div className="work-empty">Ende s&apos;ka ndryshime të regjistruara.</div>
+        ) : (
+          <ul className="payment-list">
+            {history.map((h) => (
+              <li key={h.id} style={{ alignItems: "flex-start" }}>
+                <span style={{ flex: 1 }}>{h.message}</span>
+                <span className="cell-muted" style={{ whiteSpace: "nowrap", marginLeft: 12, fontSize: 12 }}>
+                  {new Date(h.created_at).toLocaleString("sq-AL", {
+                    day: "2-digit",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </>
   );

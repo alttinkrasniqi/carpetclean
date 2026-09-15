@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { nextOrderNumber, STATUS_STEPS } from "@/lib/data";
+import { nextOrderNumber, STATUS_STEPS, STATUS_LABELS_SQ } from "@/lib/data";
+
+async function logHistory(orderId, message) {
+  await supabase.from("order_history").insert({ order_id: orderId, message });
+}
 
 export async function createOrder(formData) {
   let customerId = formData.get("customer_id");
@@ -14,7 +18,7 @@ export async function createOrder(formData) {
     const phone = (formData.get("new_customer_phone") || "").toString().trim();
     const address = (formData.get("new_customer_address") || "").toString().trim();
     if (!name || !phone) {
-      throw new Error("Customer name and phone are required.");
+      throw new Error("Emri i klientit dhe telefoni janë të detyrueshëm.");
     }
     const { data: newCustomer, error: custErr } = await supabase
       .from("customers")
@@ -66,26 +70,36 @@ export async function createOrder(formData) {
       length,
       width,
       price_per_sqm: pricePerSqm,
-      label: labels[i] || `Carpet ${i + 1}`,
+      label: labels[i] || `Qilimi ${i + 1}`,
     });
   }
 
   if (carpetRows.length === 0) {
     await supabase.from("orders").delete().eq("id", order.id);
-    throw new Error("Please add at least one carpet with valid measurements.");
+    throw new Error("Shto të paktën një qilim me matje të vlefshme.");
   }
 
   const { error: carpetErr } = await supabase.from("carpets").insert(carpetRows);
   if (carpetErr) throw new Error(carpetErr.message);
 
+  const totalSqm = carpetRows.reduce((s, c) => s + c.length * c.width, 0);
+  const totalPrice = totalSqm * pricePerSqm;
+
   const amountPaid = parseFloat(formData.get("amount_paid"));
+  let paidNote = "";
   if (amountPaid && amountPaid > 0) {
     await supabase.from("payments").insert({
       order_id: order.id,
       amount: amountPaid,
-      note: "Initial payment",
+      note: "Pagesa fillestare",
     });
+    paidNote = ` — €${amountPaid.toFixed(2)} u paguan menjëherë.`;
   }
+
+  await logHistory(
+    order.id,
+    `Porosia u krijua: ${totalSqm.toFixed(2)} m² × €${pricePerSqm.toFixed(2)} = €${totalPrice.toFixed(2)}.${paidNote}`
+  );
 
   revalidatePath("/");
   revalidatePath("/orders");
@@ -109,6 +123,12 @@ export async function updateOrderStatus(orderId, status) {
 
   await supabase.from("orders").update(patch).eq("id", orderId);
 
+  if (order && order.status !== status) {
+    const from = STATUS_LABELS_SQ[order.status] || order.status;
+    const to = STATUS_LABELS_SQ[status] || status;
+    await logHistory(orderId, `Statusi u ndryshua nga "${from}" në "${to}".`);
+  }
+
   revalidatePath("/");
   revalidatePath("/orders");
   revalidatePath(`/orders/${orderId}`);
@@ -125,15 +145,65 @@ export async function updateOrderDetails(orderId, formData) {
     notes: (formData.get("notes") || "").toString().trim(),
   };
   await supabase.from("orders").update(patch).eq("id", orderId);
+  await logHistory(orderId, "Datat/shënimet e porosisë u përditësuan.");
   revalidatePath(`/orders/${orderId}`);
+}
+
+export async function updateOrderCarpets(orderId, formData) {
+  const pricePerSqm = parseFloat(formData.get("price_per_sqm"));
+  if (!pricePerSqm || pricePerSqm <= 0) throw new Error("Vendos një çmim të vlefshëm për m².");
+
+  const { data: before } = await supabase.from("orders").select("price_per_sqm").eq("id", orderId).single();
+
+  const lengths = formData.getAll("carpet_length[]");
+  const widths = formData.getAll("carpet_width[]");
+  const labels = formData.getAll("carpet_label[]");
+
+  const carpetRows = [];
+  for (let i = 0; i < lengths.length; i++) {
+    const length = parseFloat(lengths[i]);
+    const width = parseFloat(widths[i]);
+    if (!length || !width || length <= 0 || width <= 0) continue;
+    carpetRows.push({
+      order_id: orderId,
+      length,
+      width,
+      price_per_sqm: pricePerSqm,
+      label: labels[i] || `Qilimi ${i + 1}`,
+    });
+  }
+
+  if (carpetRows.length === 0) throw new Error("Duhet të paktën një qilim me matje të vlefshme.");
+
+  // replace all carpets for this order with the edited set
+  await supabase.from("carpets").delete().eq("order_id", orderId);
+  const { error: carpetErr } = await supabase.from("carpets").insert(carpetRows);
+  if (carpetErr) throw new Error(carpetErr.message);
+
+  await supabase.from("orders").update({ price_per_sqm: pricePerSqm }).eq("id", orderId);
+
+  const newTotalSqm = carpetRows.reduce((s, c) => s + c.length * c.width, 0);
+  const newTotal = newTotalSqm * pricePerSqm;
+  const oldPriceNote = before && before.price_per_sqm !== pricePerSqm ? ` (çmimi më parë ishte €${before.price_per_sqm}/m²)` : "";
+
+  await logHistory(
+    orderId,
+    `Qilimat/çmimi u ndryshuan nga përdoruesi — totali i ri: ${newTotalSqm.toFixed(2)} m² × €${pricePerSqm.toFixed(2)} = €${newTotal.toFixed(2)}${oldPriceNote}.`
+  );
+
+  revalidatePath("/");
+  revalidatePath("/orders");
+  revalidatePath(`/orders/${orderId}`);
+  revalidatePath("/reports");
 }
 
 export async function addPayment(orderId, formData) {
   const amount = parseFloat(formData.get("amount"));
-  if (!amount || amount <= 0) throw new Error("Enter a valid payment amount.");
+  if (!amount || amount <= 0) throw new Error("Vendos një shumë të vlefshme pagese.");
   const note = (formData.get("note") || "").toString().trim();
 
   await supabase.from("payments").insert({ order_id: orderId, amount, note });
+  await logHistory(orderId, `U regjistrua pagesë prej €${amount.toFixed(2)}${note ? ` — ${note}` : ""}.`);
 
   revalidatePath("/");
   revalidatePath("/orders");
@@ -141,6 +211,7 @@ export async function addPayment(orderId, formData) {
 }
 
 export async function archiveOrder(orderId) {
+  await logHistory(orderId, "Porosia u arkivua.");
   await supabase.from("orders").update({ is_archived: true }).eq("id", orderId);
   revalidatePath("/orders");
   revalidatePath("/settings");
@@ -149,12 +220,13 @@ export async function archiveOrder(orderId) {
 
 export async function restoreOrder(orderId) {
   await supabase.from("orders").update({ is_archived: false }).eq("id", orderId);
+  await logHistory(orderId, "Porosia u rikthye nga arkivi.");
   revalidatePath("/settings");
   revalidatePath("/orders");
 }
 
 export async function deleteOrder(orderId) {
-  // carpets & payments cascade-delete automatically (see supabase-schema.sql)
+  // carpets, payments & history cascade-delete automatically (see supabase-schema.sql)
   await supabase.from("orders").delete().eq("id", orderId);
   revalidatePath("/");
   revalidatePath("/orders");
@@ -165,8 +237,8 @@ export async function deleteOrder(orderId) {
 }
 
 export async function deleteCustomer(customerId) {
-  // delete the customer's orders first (this cascades to carpets & payments
-  // automatically since those tables reference orders with ON DELETE CASCADE)
+  // delete the customer's orders first (this cascades to carpets, payments
+  // & history automatically since those tables reference orders with ON DELETE CASCADE)
   await supabase.from("orders").delete().eq("customer_id", customerId);
   await supabase.from("customers").delete().eq("id", customerId);
 
@@ -174,6 +246,21 @@ export async function deleteCustomer(customerId) {
   revalidatePath("/orders");
   revalidatePath("/");
   redirect("/customers");
+}
+
+export async function updateCustomer(customerId, formData) {
+  const name = (formData.get("name") || "").toString().trim();
+  const phone = (formData.get("phone") || "").toString().trim();
+  const address = (formData.get("address") || "").toString().trim();
+
+  if (!name || !phone) throw new Error("Emri dhe telefoni janë të detyrueshëm.");
+
+  await supabase.from("customers").update({ name, phone, address }).eq("id", customerId);
+
+  revalidatePath("/customers");
+  revalidatePath(`/customers/${customerId}`);
+  revalidatePath("/orders");
+  revalidatePath("/");
 }
 
 export async function updateSettings(formData) {

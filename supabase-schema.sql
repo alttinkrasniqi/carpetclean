@@ -51,12 +51,20 @@ create table if not exists payments (
   note text
 );
 
+create table if not exists order_history (
+  id bigint generated always as identity primary key,
+  order_id bigint not null references orders(id) on delete cascade,
+  message text not null,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists idx_orders_customer on orders(customer_id);
 create index if not exists idx_orders_status on orders(status);
 create index if not exists idx_orders_archived on orders(is_archived);
 create index if not exists idx_carpets_order on carpets(order_id);
 create index if not exists idx_payments_order on payments(order_id);
 create index if not exists idx_payments_date on payments(date);
+create index if not exists idx_order_history_order on order_history(order_id);
 
 -- Row Level Security: this is an internal tool with no login yet,
 -- so we allow the public "anon" key full read/write access.
@@ -66,6 +74,7 @@ alter table orders enable row level security;
 alter table carpets enable row level security;
 alter table payments enable row level security;
 alter table settings enable row level security;
+alter table order_history enable row level security;
 
 drop policy if exists "allow all customers" on customers;
 create policy "allow all customers" on customers for all using (true) with check (true);
@@ -81,6 +90,9 @@ create policy "allow all payments" on payments for all using (true) with check (
 
 drop policy if exists "allow all settings" on settings;
 create policy "allow all settings" on settings for all using (true) with check (true);
+
+drop policy if exists "allow all order_history" on order_history;
+create policy "allow all order_history" on order_history for all using (true) with check (true);
 
 -- default settings row
 insert into settings (business_name, default_price_per_sqm)
